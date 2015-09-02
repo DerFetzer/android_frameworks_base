@@ -42,6 +42,7 @@
 #include "InputReader.h"
 
 #include <cutils/log.h>
+#include <cutils/properties.h>
 #include <input/Keyboard.h>
 #include <input/VirtualKeyMap.h>
 
@@ -2949,6 +2950,8 @@ void TouchInputMapper::dumpRawPointerAxes(String8& dump) {
 
 void TouchInputMapper::configureSurface(nsecs_t when, bool* outResetNeeded) {
     int32_t oldDeviceMode = mDeviceMode;
+    
+    bool swapOrientation = false;
 
     // Determine device mode.
     if (mParameters.deviceType == Parameters::DEVICE_TYPE_POINTER
@@ -3070,6 +3073,90 @@ void TouchInputMapper::configureSurface(nsecs_t when, bool* outResetNeeded) {
             mSurfaceTop = 0;
             mSurfaceOrientation = DISPLAY_ORIENTATION_0;
         }
+
+        // Enable offset of MSurfaceOrientation in comparison to mViewPort.orientation
+        // ro.sf.touchrotation = {-1,0,1,2} --> -1: rotate -90°, 0: keep rotation, 1: rotate +90°, 2: rotate 180°
+        int mTouchRotation = 0;
+	ALOGD("Reading ro.sf.touchrotation...");
+        char prop[PROPERTY_VALUE_MAX];
+        if (property_get("ro.sf.touchrotation", prop, NULL) > 0) {
+	    mTouchRotation = atoi(prop);
+        }
+
+        switch (mTouchRotation) {
+        case -1:
+            ALOGW("Offset of touch device: -90°");
+            swapOrientation = true;
+            switch (mSurfaceOrientation) {
+            case DISPLAY_ORIENTATION_0:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_270;
+                break;
+            case DISPLAY_ORIENTATION_90:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_0;
+                break;
+            case DISPLAY_ORIENTATION_180:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_90;
+                break;
+            case DISPLAY_ORIENTATION_270:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_180;
+                break;
+            default:
+                break;
+            }
+            break;
+        case 1:
+            ALOGW("Offset of touch device: +90°");
+            swapOrientation = true;
+            switch (mSurfaceOrientation) {
+            case DISPLAY_ORIENTATION_0:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_90;
+                break;
+            case DISPLAY_ORIENTATION_90:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_180;
+                break;
+            case DISPLAY_ORIENTATION_180:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_270;
+                break;
+            case DISPLAY_ORIENTATION_270:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_0;
+                break;
+            default:
+                break;
+            }
+            break;
+        case 2:
+            ALOGW("Offset of touch device: 180°");
+            switch (mSurfaceOrientation) {
+            case DISPLAY_ORIENTATION_0:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_180;
+                break;
+            case DISPLAY_ORIENTATION_90:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_270;
+                break;
+            case DISPLAY_ORIENTATION_180:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_0;
+                break;
+            case DISPLAY_ORIENTATION_270:
+                mSurfaceOrientation = DISPLAY_ORIENTATION_90;
+                break;
+            default:
+                break;
+            }
+            break;
+        default:
+            ALOGD("No touch offset set.");
+            break;
+        }  
+
+        if (swapOrientation){
+            tmp = mSurfaceWidth;
+            mSurfaceWidth = mSurfaceHeight;
+            mSurfaceHeight = tmp;
+
+            tmp = mSurfaceLeft;
+            mSurfaceLeft = mSurfaceTop;
+            mSurfaceTop = tmp;          
+        }     
     }
 
     // If moving between pointer modes, need to reset some state.
@@ -3097,8 +3184,10 @@ void TouchInputMapper::configureSurface(nsecs_t when, bool* outResetNeeded) {
         // Configure X and Y factors.
         mXScale = float(mSurfaceWidth) / rawWidth;
         mYScale = float(mSurfaceHeight) / rawHeight;
+
         mXTranslate = -mSurfaceLeft;
         mYTranslate = -mSurfaceTop;
+
         mXPrecision = 1.0f / mXScale;
         mYPrecision = 1.0f / mYScale;
 

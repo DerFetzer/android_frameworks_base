@@ -1379,6 +1379,7 @@ private:
     // The orientation may be different from the viewport orientation as it specifies
     // the rotation of the surface coordinates required to produce the viewport's
     // requested orientation, so it will depend on whether the device is orientation aware.
+    int32_t tmp;
     int32_t mSurfaceWidth;
     int32_t mSurfaceHeight;
     int32_t mSurfaceLeft;
