@@ -346,6 +346,9 @@ public final class BatteryService extends SystemService {
     private void update(BatteryProperties props) {
         synchronized (mLock) {
             if (!mUpdatesStopped) {
+                // Stock kernel driver always sets present flag false --> workaround
+                props.batteryPresent = true;
+
                 mBatteryProps = props;
                 // Process the new values.
                 processValuesLocked(false);
