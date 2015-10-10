@@ -470,7 +470,12 @@ class MountService extends IMountService.Stub
                     if (!mUpdatingStatus) {
                         if (DEBUG_UNMOUNT) Slog.i(TAG, "Updating external media status on PackageManager");
                         mUpdatingStatus = true;
-                        mPms.updateExternalMediaStatus(false, true);
+                        if (ucb.path.equals(System.getenv("SECONDARY_STORAGE").split(":")[0])) {
+                            mPms.updateExternalMediaStatus(false, true);
+                        }
+                        else {
+                            finishMediaUpdate();
+                        }
                     }
                     break;
                 }
@@ -771,8 +776,9 @@ class MountService extends IMountService.Stub
         // storage volumes.
         if (!volume.isEmulated()) {
             if (Environment.MEDIA_UNMOUNTED.equals(state)) {
-                mPms.updateExternalMediaStatus(false, false);
-
+                if (path.equals(System.getenv("SECONDARY_STORAGE").split(":")[0])) {
+                    mPms.updateExternalMediaStatus(false, false);
+                }
                 /*
              * Some OBBs might have been unmounted when this volume was
              * unmounted, so send a message to the handler to let it know to
@@ -1215,7 +1221,10 @@ class MountService extends IMountService.Stub
         Runtime.getRuntime().gc();
 
         // Redundant probably. But no harm in updating state again.
-        mPms.updateExternalMediaStatus(false, false);
+        if (path.equals(System.getenv("SECONDARY_STORAGE").split(":")[0])) {
+            mPms.updateExternalMediaStatus(false, false);
+        }
+
         try {
             final Command cmd = new Command("volume", "unmount", path);
             if (removeEncryption) {
@@ -1225,8 +1234,10 @@ class MountService extends IMountService.Stub
             }
             mConnector.execute(cmd);
             // We unmounted the volume. None of the asec containers are available now.
-            synchronized (mAsecMountSet) {
-                mAsecMountSet.clear();
+            if (path.equals(System.getenv("SECONDARY_STORAGE").split(":")[0])) {
+                synchronized (mAsecMountSet) {
+                    mAsecMountSet.clear();
+                }
             }
             return StorageResultCode.OperationSucceeded;
         } catch (NativeDaemonConnectorException e) {
