@@ -825,6 +825,10 @@
          Used to decide if the user can change the colors -->
     <bool name="config_multiColorBatteryLed">false</bool>
 
+    <!-- Does the device have multiple LEDs ?
+         Used to decide if the user can change the multiple LEDs settings -->
+    <bool name="config_multipleNotificationLeds">false</bool>
+
     <!-- Do the battery/notification LEDs support pulsing?
          Used to decide if we show pulse settings -->
     <bool name="config_ledCanPulse">true</bool>
@@ -2381,6 +2385,10 @@
 
     <!-- Config to enable installation of region locked packages -->
     <string-array name="config_region_locked_packages" translatable="false">
+    </string-array>
+
+    <!-- Packages in this list should be a union of all packages defined in values-mccxxx (mcc) -->
+    <string-array name="config_restrict_to_region_locked_devices" translatable="false">
     </string-array>
 
     <!-- Show data activity indicators on signal bar -->
