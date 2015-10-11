@@ -2145,6 +2145,13 @@ public final class Settings {
          */
         public static final String STATUS_BAR_BRIGHTNESS_CONTROL = "status_bar_brightness_control";
 
+        //add for Hdmi
+        /**
+         * The hdmi lcd timeout seconds
+         *@hide
+         */
+        public static final String HDMI_LCD_TIMEOUT = "hdmi_lcd_timeout";
+
         /**
          * Whether to show the IME switcher in the status bar
          * @hide
